@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-crawl-and-scrape-ben",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"description": "n8n custom node to crawl and scrape website",
 	"keywords": [
 		"n8n-community-node-package",
