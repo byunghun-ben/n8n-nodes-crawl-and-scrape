@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-crawl-and-scrape-ben",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "n8n custom node to crawl and scrape website",
 	"keywords": [
 		"n8n-community-node-package",
@@ -9,14 +9,14 @@
 		"scraping"
 	],
 	"license": "MIT",
-	"homepage": "https://github.com/byunghun-ben/n8n-nodes-crawlee",
+	"homepage": "https://github.com/byunghun-ben/n8n-nodes-crawl-and-scrape",
 	"author": {
 		"name": "byunghun",
 		"email": "kepy1106@gmail.com"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/byunghun-ben/n8n-nodes-crawlee"
+		"url": "git+https://github.com/byunghun-ben/n8n-nodes-crawl-and-scrape.git"
 	},
 	"engines": {
 		"node": ">=18.10",
