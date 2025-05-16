@@ -83,6 +83,7 @@ export class CrawleeNode implements INodeType {
 
 		for (let itemIndex = 0; itemIndex < items.length; itemIndex++) {
 			try {
+				let crawlerError: Error | undefined = undefined;
 				const url = this.getNodeParameter('url', itemIndex, '') as string;
 				const operation = this.getNodeParameter('operation', itemIndex, '') as string;
 
@@ -118,7 +119,8 @@ export class CrawleeNode implements INodeType {
 
 					await crawler.run([appendTimestampToUrl(url)]);
 					const uniqueLinks = [...new Set(crawledData.flatMap((item) => item.links))];
-					returnData.push({
+
+					const result: INodeExecutionData = {
 						json: {
 							status: 'success',
 							message: 'Crawling finished',
@@ -127,9 +129,11 @@ export class CrawleeNode implements INodeType {
 								links: uniqueLinks,
 							},
 						},
-					});
+					};
+
+					returnData.push(result);
 				} else if (operation === 'extractText') {
-					const originalUrl = url;
+					let crawlerFailed = false;
 
 					const crawler = new CheerioCrawler({
 						requestHandlerTimeoutSecs: 30,
@@ -143,29 +147,24 @@ export class CrawleeNode implements INodeType {
 									status: 'success',
 									message: 'Text extraction finished',
 									data: {
-										url: originalUrl,
+										url,
 										text,
 									},
 								},
 							});
 						},
-						errorHandler: ({ request, error }) => {
-							console.log('[CrawleeNode] Error: ', error);
-							console.log('[CrawleeNode] Error: ', this.continueOnFail());
-							returnData.push({
-								json: {
-									status: 'error',
-									message: 'Text extraction failed',
-									data: {
-										url: originalUrl,
-										error: error instanceof Error ? error.message : String(error),
-									},
-								},
-							});
+						failedRequestHandler: ({ log }, error) => {
+							log.error(`Error extracting text from ${url}: ${error}`);
+							crawlerFailed = true;
+							crawlerError = error;
 						},
 					});
 
 					await crawler.run([appendTimestampToUrl(url)]);
+
+					if (crawlerFailed && crawlerError) {
+						throw crawlerError;
+					}
 				} else if (operation === 'extractHtml') {
 					const originalUrl = url;
 					const crawler = new CheerioCrawler({
@@ -191,9 +190,13 @@ export class CrawleeNode implements INodeType {
 				}
 			} catch (error) {
 				console.log('[CrawleeNode] Error: ', error);
-				console.log('[CrawleeNode] Error: ', this.continueOnFail());
+
 				if (this.continueOnFail()) {
-					items.push({ json: this.getInputData(itemIndex)[0].json, error, pairedItem: itemIndex });
+					returnData.push({
+						json: this.getInputData(itemIndex)[0].json,
+						error,
+						pairedItem: itemIndex,
+					});
 				} else {
 					if (error.context) {
 						error.context.itemIndex = itemIndex;
