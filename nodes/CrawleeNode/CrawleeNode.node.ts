@@ -1,13 +1,11 @@
-import {
-	NodeOperationError,
-} from 'n8n-workflow';
+import { CheerioCrawler } from 'crawlee';
 import type {
 	IExecuteFunctions,
 	INodeExecutionData,
 	INodeType,
 	INodeTypeDescription,
 } from 'n8n-workflow';
-import { CheerioCrawler } from 'crawlee';
+import { NodeOperationError } from 'n8n-workflow';
 
 function appendTimestampToUrl(url: string): string {
 	const separator = url.includes('?') ? '&' : '?';
@@ -119,7 +117,7 @@ export class CrawleeNode implements INodeType {
 					});
 
 					await crawler.run([appendTimestampToUrl(url)]);
-					const uniqueLinks = [...new Set(crawledData.flatMap(item => item.links))];
+					const uniqueLinks = [...new Set(crawledData.flatMap((item) => item.links))];
 					returnData.push({
 						json: {
 							status: 'success',
@@ -132,6 +130,7 @@ export class CrawleeNode implements INodeType {
 					});
 				} else if (operation === 'extractText') {
 					const originalUrl = url;
+
 					const crawler = new CheerioCrawler({
 						requestHandlerTimeoutSecs: 30,
 						useSessionPool: false,
@@ -146,6 +145,20 @@ export class CrawleeNode implements INodeType {
 									data: {
 										url: originalUrl,
 										text,
+									},
+								},
+							});
+						},
+						errorHandler: ({ request, error }) => {
+							console.log('[CrawleeNode] Error: ', error);
+							console.log('[CrawleeNode] Error: ', this.continueOnFail());
+							returnData.push({
+								json: {
+									status: 'error',
+									message: 'Text extraction failed',
+									data: {
+										url: originalUrl,
+										error: error instanceof Error ? error.message : String(error),
 									},
 								},
 							});
@@ -177,6 +190,8 @@ export class CrawleeNode implements INodeType {
 					await crawler.run([appendTimestampToUrl(url)]);
 				}
 			} catch (error) {
+				console.log('[CrawleeNode] Error: ', error);
+				console.log('[CrawleeNode] Error: ', this.continueOnFail());
 				if (this.continueOnFail()) {
 					items.push({ json: this.getInputData(itemIndex)[0].json, error, pairedItem: itemIndex });
 				} else {
